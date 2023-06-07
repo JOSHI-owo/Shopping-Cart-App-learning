@@ -1,4 +1,5 @@
 import { CreateSlice, createSlice } from "@reduxjs/toolkit";
+import { uiActions } from "./ui-slice";
 
 const cartSlice = createSlice({
   name: "cart",
@@ -6,10 +7,16 @@ const cartSlice = createSlice({
     itemsList: [],
     totalQuantity: 0,
     showCart: false,
+    changed: false,
   },
 
   reducers: {
+    replaceData(state, action) {
+      state.totalQuantity = action.payload.totalPrice;
+      state.itemsList = action.payload.itemsList;
+    },
     addToCart(state, action) {
+      state.changed = true;
       const newItem = action.payload;
 
       //to check if the item is laready available
@@ -33,6 +40,7 @@ const cartSlice = createSlice({
       }
     },
     removeFromCart(state, action) {
+      state.changed = true;
       const id = action.payload;
 
       const existingItem = state.itemsList.find((item) => item.id == id);
@@ -50,6 +58,49 @@ const cartSlice = createSlice({
     },
   },
 });
+
+export const sendCartData = (cart) => {
+  return async (dispatch) => {
+    dispatch(
+      uiActions.showNotification({
+        open: true,
+        message: "sending request",
+        type: "warning",
+      })
+    );
+
+    const sendRequest = async () => {
+      //Sens state as sending request
+
+      const res = await fetch(
+        "https://redux-http-d8df8-default-rtdb.firebaseio.com/cartitems.json",
+        { method: "PUT", body: JSON.stringify(cart) }
+      );
+
+      const data = await res.json();
+
+      dispatch(
+        uiActions.showNotification({
+          open: true,
+          message: "Sent the Request To Database Successfully",
+          type: "success",
+        })
+      );
+    };
+
+    try {
+      await sendRequest();
+    } catch (err) {
+      dispatch(
+        uiActions.showNotification({
+          open: true,
+          message: "Sending request failed",
+          type: "error",
+        })
+      );
+    }
+  };
+};
 
 export const cartActions = cartSlice.actions;
 
